@@ -52,9 +52,13 @@ test('in a short window the model panel stays inside it, and its last agent can 
     const [box, height] = [await panel.boundingBox(), await page.evaluate(() => innerHeight)]
     expect(box!.y).toBeGreaterThanOrEqual(0)
     expect(box!.y + box!.height).toBeLessThanOrEqual(height)
+    // The bot runs the last seat (Custom command), so another one is picked first.
+    await page.locator('.model-picker .model-picker-agent[aria-label^="Kiro CLI"]').first().click()
     const last = page.locator('.model-picker .model-picker-agent:not(.model-picker-add)').last()
+    await expect(last).toHaveAttribute('aria-pressed', 'false')
     await last.click()
     await expect(last).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.locator('.details-panel .model-picker-field')).toContainText('Custom command')
   } finally {
     await cdp.send('Emulation.clearDeviceMetricsOverride').catch(() => {})
     if (botId) await api(page, 'deleteBot', { botId }).catch(() => {})

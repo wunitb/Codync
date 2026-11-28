@@ -30,7 +30,7 @@
   padding: 4px 12px 12px;
 }
 /* As tall as what it lists, up to a fixed height: a short list leaves no empty column. In a short window the columns
-   give up height to the footer (the rail and the list scroll), so the panel stays inside it. */
+   give up height to the footer (the rail and the models scroll), so the panel stays inside it. */
 .model-picker-columns {
   display: flex;
   min-height: 0;
@@ -94,6 +94,8 @@
 .model-picker-models {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -116,9 +118,10 @@
 .model-picker-search input::placeholder {
   color: var(--tertiary);
 }
+/* Gives up height to a short window down to a few rows; below that the whole column scrolls. */
 .model-picker-list {
   flex: 0 1 auto;
-  min-height: 0;
+  min-height: 96px;
   display: flex;
   flex-direction: column;
   gap: 2px;

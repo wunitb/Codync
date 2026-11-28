@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { addAccount, agents, api, attach } from './sandbox.ts'
+import { addAccount, agents, attach, dropLoginProfile } from './sandbox.ts'
 
 // Opens a real agent's own sign-in on this computer: only when the maintainer asks for a real login test
 // (docs/guides/test-stack.md#real-login-tests), never part of the suite. Repeated automated sign-ins can get an
@@ -20,7 +20,7 @@ test("Add account opens a real agent's sign-in in a terminal, and leaving it sig
     await expect(added).toHaveCount(0)
     profileId = undefined
   } finally {
-    if (profileId) await api(page, 'removeLoginProfile', { loginProfile: profileId }).catch(() => {})
+    if (profileId) await dropLoginProfile(page, profileId).catch(() => {})
     await page.reload() // Leaves Extensions, which would cover what the next spec clicks.
     await browser.close()
   }

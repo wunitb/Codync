@@ -228,7 +228,7 @@ export async function addAccount(page: Page, agent: Agent, made: (id: string) =>
   await expect.poll(async () => (id = (await loginProfilesOf(page, agent.id)).find((p) => !before.has(p.id))?.id)).toBeTruthy()
   if (!id) throw new Error('Add account made no login profile.')
   made(id)
-  await page.locator('.market-screen-header').getByRole('button', { name: 'Back' }).click()
+  await signInBack(page).click()
   await expect(card.locator('.login-profile', { hasText: 'New login profile' })).toContainText('Not signed in')
   return id
 }
@@ -239,12 +239,14 @@ export async function addAccount(page: Page, agent: Agent, made: (id: string) =>
  * done"), so it is asked until it agrees. Left behind, the profile would fail the next run's `addAccount`.
  */
 export async function dropLoginProfile(page: Page, id: string) {
-  const back = page.locator('.market-screen-header').getByRole('button', { name: 'Back' })
+  const back = signInBack(page)
   if (await back.isVisible()) await back.click()
   await expect(page.locator('.setup-terminal-surface')).toHaveCount(0)
-  const removed = () => api(page, 'removeLoginProfile', { loginProfile: id }).then(() => true, () => false)
-  await expect.poll(removed, { timeout: 15_000 }).toBe(true)
+  await expect(() => api(page, 'removeLoginProfile', { loginProfile: id })).toPass({ timeout: 20_000 })
 }
+
+/** The Back button of an open sign-in sheet. */
+const signInBack = (page: Page) => page.locator('.market-screen-header').getByRole('button', { name: 'Back' })
 
 /** Sends `text` from the open chat's composer (not the box of a thread open in the inspector). */
 export async function typeMessage(page: Page, text: string) {

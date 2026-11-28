@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import { api, attach, openPage, sandbox } from './sandbox.ts'
+import { api, attach, dropLoginProfile, openPage, sandbox } from './sandbox.ts'
 
 type Window = { id: string; percent: number }
 type Provider = { id: string; windows: Window[]; loginProfiles?: { id: string; name: string; windows: Window[] }[] }
@@ -80,13 +80,13 @@ test('The Usage page lists each login of an agent with login profiles, with its 
     await expect(groups.nth(1)).not.toContainText('Work')
 
     // Refused while the new row's first usage check still runs the agent's CLI on it.
-    await expect(() => api(page, 'removeLoginProfile', { loginProfile: profile })).toPass({ timeout: 20_000 })
+    await dropLoginProfile(page, profile)
     profile = undefined
     await expect(groups).toHaveCount(0)
     await expect(agent).toContainText('13%')
     expect((await claude())?.loginProfiles).toBeUndefined()
   } finally {
-    if (profile) await api(page, 'removeLoginProfile', { loginProfile: profile }).catch(() => {})
+    if (profile) await dropLoginProfile(page, profile).catch(() => {})
     await api(page, 'setUsageShown', { id: 'claude', shown: service.shown }).catch(() => {})
     await page.reload().catch(() => {}) // Closes Settings, which would cover the next spec's window.
     await browser.close()
@@ -126,7 +126,7 @@ test('The Usage page marks a login whose check failed as out of date, until the 
     await expect(work).toContainText('78%')
     await expect(work).not.toContainText('Out of date')
   } finally {
-    if (profile) await expect(() => api(page, 'removeLoginProfile', { loginProfile: profile })).toPass({ timeout: 20_000 }).catch(() => {})
+    if (profile) await dropLoginProfile(page, profile).catch(() => {})
     await api(page, 'setUsageShown', { id: 'claude', shown: service.shown }).catch(() => {})
     await page.reload().catch(() => {}) // Closes Settings, which would cover the next spec's window.
     await browser.close()

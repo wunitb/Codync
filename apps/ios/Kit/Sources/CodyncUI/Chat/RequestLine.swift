@@ -16,7 +16,7 @@ enum Request {
     }
 
     /// The symbol of a request, so one tells from the next: by the tool's kind, and for a tool of no kind (an MCP
-    /// server's) by the verb its name starts with.
+    /// server's) by the verb its name starts with; the terminal symbol for anything else, as on the desktop.
     static func icon(kind: String?, title: String?) -> String {
         let byKind = ["execute": "terminal", "edit": "pencil", "delete": "trash", "move": "pencil", "fetch": "globe", "read": "doc.text", "search": "magnifyingglass"]
         if let kind, let icon = byKind[kind] { return icon }
@@ -24,8 +24,16 @@ enum Request {
                       "write": "pencil", "edit": "pencil", "update": "pencil", "create": "pencil", "add": "pencil", "save": "pencil",
                       "delete": "trash", "remove": "trash", "fetch": "globe", "open": "globe", "run": "terminal"]
         let verb = title.flatMap(mcpTool)?.tool.split(separator: "_").first.map(String.init)
-        return verb.flatMap { byVerb[$0] } ?? "wrench.and.screwdriver"
+        return verb.flatMap { byVerb[$0] } ?? fallbackIcon
     }
+
+    /// A run's symbol: the one its requests share, the terminal symbol when they differ.
+    static func icon(of entries: [Entry]) -> String {
+        let icons = Set(entries.map { icon(kind: $0.data.toolKind, title: $0.data.title) })
+        return icons.count == 1 ? icons.first ?? fallbackIcon : fallbackIcon
+    }
+
+    private static let fallbackIcon = "terminal"
 
     /// What an answered (or cancelled, or expired) approval ended in; nil while it waits or for any other entry.
     static func ending(_ e: Entry) -> String? {
@@ -97,11 +105,10 @@ struct RequestRun<Row: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let icons = Set(entries.map { Request.icon(kind: $0.data.toolKind, title: $0.data.title) })
         var sources: [String] = []
         for e in entries { if let s = Request.name(e.data.title ?? "").source, !sources.contains(s) { sources.append(s) } }
         return VStack(alignment: .leading, spacing: 0) {
-            RequestLine(icon: icons.count == 1 ? icons.first! : "wrench.and.screwdriver",
+            RequestLine(icon: Request.icon(of: entries),
                         name: L10n.fill(L10n.tr("{count} tool requests"), ["count": "\(entries.count)"]),
                         source: sources.isEmpty ? nil : sources.joined(separator: ", "),
                         ending: entries.first.map { PermissionCard.outcome($0.data) }, expanded: open) {

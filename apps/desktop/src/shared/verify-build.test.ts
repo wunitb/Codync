@@ -9,13 +9,15 @@ const require = createRequire(import.meta.url)
 const verifyBuild = require('../../tools/verify-build.cjs')
 const { Arch } = require('electron-builder')
 
+const MAC_NATIVE = ['codync-host', 'codync-speech']
+
 function fixture(t: TestContext, platform = 'darwin', arch = Arch.x64) {
   const projectDir = mkdtempSync(join(tmpdir(), 'codync-verify-build-'))
   t.after(() => rmSync(projectDir, { recursive: true, force: true }))
   mkdirSync(join(projectDir, 'resources'))
   writeFileSync(join(projectDir, 'resources/account-config.json'), JSON.stringify({ environment: 'dev' }))
   if (platform === 'win32') writeHost(projectDir, 0x8664)
-  if (platform === 'darwin') writeNative(projectDir, 'codync-speech', 'fixture')
+  if (platform === 'darwin') for (const name of MAC_NATIVE) writeNative(projectDir, name, 'fixture')
   return { electronPlatformName: platform, arch, packager: { projectDir, appInfo: { id: 'com.pokai.Codync.dev' } } }
 }
 
@@ -48,10 +50,12 @@ test('macOS packaging requires the Apple logo manifest entry and every rendered 
   await assert.doesNotReject(verifyBuild(context))
 })
 
-test('macOS packaging refuses an app without the on-device speech helper', async (t) => {
-  const context = fixture(t)
-  rmSync(join(context.packager.projectDir, 'build/native/codync-speech'))
-  await assert.rejects(verifyBuild(context), /missing codync-speech/)
+test('macOS packaging refuses an app without its bundled host or speech helper', async (t) => {
+  for (const name of MAC_NATIVE) {
+    const context = fixture(t)
+    rmSync(join(context.packager.projectDir, 'build/native', name))
+    await assert.rejects(verifyBuild(context), new RegExp(`missing ${name}`))
+  }
 })
 
 test('Linux and Windows packaging does not require Apple-only SF Symbols', async (t) => {

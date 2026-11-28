@@ -1,6 +1,6 @@
 // Fail before packaging if a stale account-config.json belongs to the other app variant, if
 // the bundled Windows host was built for another architecture than the installer, or if the Mac
-// app would ship without its on-device speech helper.
+// app would ship without its bundled host or on-device speech helper.
 const { accessSync, existsSync, readFileSync } = require('node:fs')
 const { join } = require('node:path')
 const { Arch } = require('electron-builder')
@@ -26,8 +26,10 @@ module.exports = async (context) => {
   if (config.environment !== expected) throw new Error(`Packaging ${expected} with ${config.environment} account config; run the matching dist script.`)
   if (context.electronPlatformName === 'darwin') {
     // electron-builder skips a missing extraResources file without a word.
-    if (!existsSync(join(context.packager.projectDir, 'build/native/codync-speech'))) {
-      throw new Error('The macOS build is missing codync-speech; build it with node tools/native-speech.mjs.')
+    for (const name of ['codync-host', 'codync-speech']) {
+      if (!existsSync(join(context.packager.projectDir, 'build/native', name))) {
+        throw new Error(`The macOS build is missing ${name}; run the matching dist script.`)
+      }
     }
     const symbols = join(context.packager.projectDir, 'out/renderer/symbols')
     const manifest = JSON.parse(readFileSync(join(symbols, 'manifest.json'), 'utf8'))

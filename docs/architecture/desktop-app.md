@@ -165,7 +165,7 @@ They write `resources/account-config.json` for that environment, and the Mac one
 bundled host (`tools/native-host.mjs`, universal, through rustup's pinned toolchain) for the same
 one, so app and host always match, plus the Codync Screen helper (`tools/native-screen.mjs`) and
 the on-device speech helper `codync-speech` (`tools/native-speech.mjs`, universal in both environments:
-it builds in seconds). Packaging stops if the speech helper is missing (`tools/verify-build.cjs`).
+it builds in seconds). Packaging stops if the bundled host or the speech helper is missing (`tools/verify-build.cjs`).
 `dist:mac:dev` builds only what this Mac runs: the app folder for its architecture
 (`dist/mac-arm64/Codync Dev.app` on Apple silicon), the host for that architecture in the faster
 `dev-app` profile, and signatures without Apple's timestamp server (only notarized builds need it;

@@ -1,6 +1,7 @@
-// Fail before packaging if a stale account-config.json belongs to the other app variant, or if
-// the bundled Windows host was built for another architecture than the installer.
-const { accessSync, readFileSync } = require('node:fs')
+// Fail before packaging if a stale account-config.json belongs to the other app variant, if
+// the bundled Windows host was built for another architecture than the installer, or if the Mac
+// app would ship without its bundled host or on-device speech helper.
+const { accessSync, existsSync, readFileSync } = require('node:fs')
 const { join } = require('node:path')
 const { Arch } = require('electron-builder')
 
@@ -24,6 +25,12 @@ module.exports = async (context) => {
   const config = JSON.parse(readFileSync(join(context.packager.projectDir, 'resources/account-config.json'), 'utf8'))
   if (config.environment !== expected) throw new Error(`Packaging ${expected} with ${config.environment} account config; run the matching dist script.`)
   if (context.electronPlatformName === 'darwin') {
+    // electron-builder skips a missing extraResources file without a word.
+    for (const name of ['codync-host', 'codync-speech']) {
+      if (!existsSync(join(context.packager.projectDir, 'build/native', name))) {
+        throw new Error(`The macOS build is missing ${name}; run the matching dist script.`)
+      }
+    }
     const symbols = join(context.packager.projectDir, 'out/renderer/symbols')
     const manifest = JSON.parse(readFileSync(join(symbols, 'manifest.json'), 'utf8'))
     if (!manifest['apple.logo']) throw new Error('The macOS build is missing the Apple logo; rebuild the app on macOS.')
